@@ -7,7 +7,6 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,7 +28,6 @@ class SensorDetailsFragment : Fragment(), SensorEventListener {
     private var isSensorEnabled = false
     private val args: SensorDetailsFragmentArgs by navArgs()
 
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -43,7 +41,9 @@ class SensorDetailsFragment : Fragment(), SensorEventListener {
         sensorManager = requireActivity().getSystemService(Context.SENSOR_SERVICE) as SensorManager
         setupGyroscopeFragment()
         setupLayout()
-        (activity as MainActivity).supportActionBar?.title = sensor.name
+        (activity as MainActivity).supportActionBar?.title =
+            if (this::sensor.isInitialized) sensor.name
+            else "Error with sensor"
 
         requireActivity().onBackPressedDispatcher.addCallback(
             viewLifecycleOwner, object : OnBackPressedCallback(true) {
@@ -59,7 +59,7 @@ class SensorDetailsFragment : Fragment(), SensorEventListener {
     }
 
     @SuppressLint("SetTextI18n")
-    private fun setupLayout(){
+    private fun setupLayout() {
         if (isSensorEnabled) {
             binding.enableSensorTv.text = "Enabled"
             binding.enableSensorIv.setColorFilter(ContextCompat.getColor(requireContext(), R.color.green))
@@ -72,9 +72,12 @@ class SensorDetailsFragment : Fragment(), SensorEventListener {
 
     @SuppressLint("SetTextI18n")
     private fun setupGyroscopeFragment() {
-        sensor = sensorManager.getDefaultSensor(args.sensorType).also {
+        try {
+            sensor = sensorManager.getDefaultSensor(args.sensorType)
             isSensorEnabled =
-                sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+                sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
