@@ -85,7 +85,7 @@ class SensorDetailsFragment : Fragment(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent?) {
         var result = ""
         event?.values?.indices?.forEach {
-            result += "value[$it]: ${String.format("%.2f", event.values?.get(it))} \n"
+            result += "Value[$it]: ${String.format("%.2f", event.values?.get(it))} \n"
         }
         binding.valuesTv.text = result
     }

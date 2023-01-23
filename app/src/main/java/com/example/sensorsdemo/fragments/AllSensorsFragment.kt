@@ -4,6 +4,8 @@ import android.content.Context.SENSOR_SERVICE
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,6 +22,7 @@ class AllSensorsFragment : Fragment() {
 
     private lateinit var sensorManager: SensorManager
     private lateinit var sensorsAdapter: SensorsAdapter
+    private lateinit var sensorList: List<Sensor>
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,7 +36,27 @@ class AllSensorsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         (activity as MainActivity).supportActionBar?.title = "All Sensors"
         sensorManager = requireActivity().getSystemService(SENSOR_SERVICE) as SensorManager
+        sensorList = sensorManager.getSensorList(Sensor.TYPE_ALL)
         setupSensorRecyclerView()
+        setupSearchSensor()
+    }
+
+    private fun setupSearchSensor() {
+        binding.sensorSearchEt.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (count >= 2) {
+                    sensorsAdapter.differ.submitList(sensorList.filter {
+                        it.name.contains(s!!, true)
+                    })
+                } else {
+                    sensorsAdapter.differ.submitList(sensorList.sortedBy { it.type })
+                }
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
     }
 
     private fun setupSensorRecyclerView() {
@@ -42,15 +65,11 @@ class AllSensorsFragment : Fragment() {
             adapter = sensorsAdapter
             layoutManager = LinearLayoutManager(activity)
         }
-        sensorsAdapter.differ.submitList(getAllAvailableSensors())
+        sensorsAdapter.differ.submitList(sensorList.sortedBy { it.type })
         sensorsAdapter.setOnItemClickListener {
             val action =
                 AllSensorsFragmentDirections.actionAllSensorsFragmentToSensorDetailsFragment(it.type)
             Navigation.findNavController(requireView()).navigate(action)
         }
-    }
-
-    private fun getAllAvailableSensors(): List<Sensor> {
-        return sensorManager.getSensorList(Sensor.TYPE_ALL).sortedBy { it.type }
     }
 }
